@@ -869,7 +869,6 @@ function LivePartnerPanel() {
           <span>한국수어 실시간 감지</span>
           <span><ScanFace size={14} /> 포즈·안면 추적</span>
         </div>
-        <div className="partner-focus-frame"><span /></div>
         <div className="partner-camera-caption"><Activity size={17} /> 인식된 제스처: [안녕하세요] + [확인]</div>
       </div>
     </section>
