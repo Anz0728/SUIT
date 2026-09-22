@@ -81,7 +81,7 @@ function SuitApp() {
   }[screen];
 
   return (
-    <div className={`suit-app text-${app.state.prefs.textSize}`}>
+    <div className={`suit-app text-${app.state.prefs.textSize} ${app.state.prefs.highContrast ? "contrast-high" : ""}`}>
       <header className="app-header">
         <button className="app-brand" onClick={() => setScreen("home")} aria-label="SUIT 홈">
           <span className="brand-mark"><Hand size={20} /></span>

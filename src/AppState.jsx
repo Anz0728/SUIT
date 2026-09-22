@@ -93,7 +93,8 @@ export function AppProvider({ children }) {
     const token = speechToken.current;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = language === "en" ? "en-US" : "ko-KR";
-    utterance.rate = 0.9;
+    utterance.rate = state.prefs.speechRate;
+    utterance.pitch = state.prefs.voiceTone === "calm" ? 0.9 : 1.05;
     utterance.onstart = () =>
       token === speechToken.current && setSpeaking(true);
     utterance.onend = () => token === speechToken.current && setSpeaking(false);
@@ -217,6 +218,14 @@ export function AppProvider({ children }) {
     }));
     notify("이 대화의 보관 방법을 바꿨어요.");
   };
+  const toggleBookmark = (id) => {
+    setState((s) => ({
+      ...s,
+      sessions: s.sessions.map((c) =>
+        c.id === id ? { ...c, bookmarked: !c.bookmarked } : c,
+      ),
+    }));
+  };
   const savePhrases = (id, entries) =>
     setState((s) => ({ ...s, overrides: { ...s.overrides, [id]: entries } }));
   const setStaff = (staff) => setState((s) => ({ ...s, staff }));
@@ -242,6 +251,7 @@ export function AppProvider({ children }) {
         deleteSession,
         setPrefs,
         setRetention,
+        toggleBookmark,
         savePhrases,
         setStaff,
         notify,

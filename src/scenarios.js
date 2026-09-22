@@ -340,6 +340,16 @@ export const DEFAULT_PREFS = {
   language: "both",
   speech: true,
   retention: "24h",
+  faceTracking: true,
+  poseTracking: true,
+  spatialTracking: true,
+  confidenceAlert: true,
+  confidenceThreshold: 80,
+  kslEnglish: true,
+  haptics: true,
+  highContrast: false,
+  voiceTone: "clear",
+  speechRate: 0.9,
 };
 export const STORAGE_KEY = "modoo.frontend.v2";
 export const retentionLabels = {
@@ -409,6 +419,30 @@ export function loadState(raw, now = Date.now()) {
       prefs.speech = data.prefs.speech;
     if (Object.keys(retentionLabels).includes(data.prefs?.retention))
       prefs.retention = data.prefs.retention;
+    for (const key of [
+      "faceTracking",
+      "poseTracking",
+      "spatialTracking",
+      "confidenceAlert",
+      "kslEnglish",
+      "haptics",
+      "highContrast",
+    ]) {
+      if (typeof data.prefs?.[key] === "boolean") prefs[key] = data.prefs[key];
+    }
+    if (
+      typeof data.prefs?.confidenceThreshold === "number" &&
+      data.prefs.confidenceThreshold >= 50 &&
+      data.prefs.confidenceThreshold <= 99
+    )
+      prefs.confidenceThreshold = data.prefs.confidenceThreshold;
+    if (["clear", "calm"].includes(data.prefs?.voiceTone))
+      prefs.voiceTone = data.prefs.voiceTone;
+    if (
+      typeof data.prefs?.speechRate === "number" &&
+      [0.7, 0.9, 1.2].includes(data.prefs.speechRate)
+    )
+      prefs.speechRate = data.prefs.speechRate;
     const sessions = Array.isArray(data.sessions)
       ? data.sessions
           .filter(

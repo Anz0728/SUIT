@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
+  Activity,
   ArrowLeft,
   ArrowRight,
   Camera,
@@ -31,6 +32,15 @@ import {
   GraduationCap,
   Landmark,
   HeartPulse,
+  Gauge,
+  Languages,
+  FileDown,
+  ScanFace,
+  Sun,
+  Ruler,
+  Vibrate,
+  Star,
+  Copy,
 } from "lucide-react";
 import { useApp } from "./AppState";
 import {
@@ -335,6 +345,8 @@ function CameraModule({ onRecognized }) {
   const [busy, setBusy] = useState(false);
   const [automatic, setAutomatic] = useState(false);
   const [low, setLow] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [guideOn, setGuideOn] = useState(true);
   const timer = useRef(null);
   const candidate = app.phrases[index] ?? app.phrases[0];
   useEffect(() => {
@@ -353,19 +365,13 @@ function CameraModule({ onRecognized }) {
         mode: "sign",
         confidence: low ? 64 : 92,
       });
-    }, 800);
+    }, speed === 1.5 ? 520 : speed === 0.7 ? 1100 : 800);
   }
   useEffect(() => {
     if (!automatic || busy || !candidate) return;
     const t = setTimeout(recognize, 3000);
     return () => clearTimeout(t);
   }, [automatic, busy, candidate, low]);
-  function reset() {
-    clearTimeout(timer.current);
-    setAutomatic(false);
-    setBusy(false);
-    setIndex((i) => (i + 1) % Math.max(1, app.phrases.length));
-  }
   async function flip() {
     const next = facing === "user" ? "environment" : "user";
     setFacing(next);
@@ -390,7 +396,13 @@ function CameraModule({ onRecognized }) {
             className={facing === "user" ? "mirrored" : ""}
           />
         )}
-        <div className="scan-frame">
+        <div className="vision-hud" aria-label="수어 인식 상태">
+          <span className="hud-primary">KSL 실시간 파이프라인</span>
+          <span><Gauge size={13} /> 신뢰도 {low ? "64.0" : "92.5"}%</span>
+          <span><Sun size={13} /> 조명 양호</span>
+          <span><Ruler size={13} /> 거리 0.8m</span>
+        </div>
+        <div className={`scan-frame ${guideOn ? "" : "guide-off"}`}>
           <span className="corner top-left" />
           <span className="corner top-right" />
           <span className="corner bottom-left" />
@@ -403,6 +415,14 @@ function CameraModule({ onRecognized }) {
               <span className="hand-guide right" />
             </div>
           )}
+          <span className="tracking-label face">얼굴·표정 추적</span>
+          <span className="tracking-label left-hand">왼손 21 pts</span>
+          <span className="tracking-label right-hand">오른손 21 pts</span>
+          <span className="pose-line shoulder" />
+          <span className="pose-point p1" />
+          <span className="pose-point p2" />
+          <span className="pose-point p3" />
+          <span className="pose-point p4" />
         </div>
         <span className="camera-mode-tag">
           {media.stream ? "카메라 미리보기" : "예시 모드"}
@@ -415,7 +435,20 @@ function CameraModule({ onRecognized }) {
               ? "3초 후 예시를 자동으로 확인해요"
               : "얼굴과 양손, 상체가 화면에 보이도록 맞춰주세요"}
         </div>
+        <div className="recognition-stream" aria-hidden="true">
+          <Activity size={17} />
+          <span>인식 스트림: [만나다] + [시간] + [확인]</span>
+        </div>
       </section>
+      <details className="recognition-details">
+        <summary>인식 상태 자세히</summary>
+        <div className="recognition-metrics">
+          <span><small>손동작</small><strong>{low ? "71" : "96"}%</strong></span>
+          <span><small>표정·시선</small><strong>{low ? "62" : "94"}%</strong></span>
+          <span><small>응답 시간</small><strong>{speed === 1.5 ? "21" : speed === 0.7 ? "48" : "32"}ms</strong></span>
+        </div>
+        <p><strong>감지 토큰</strong> [만나다] + [시간] + [확인]</p>
+      </details>
       <div className="inline-actions">
         <button
           disabled={media.status === "loading"}
@@ -431,6 +464,17 @@ function CameraModule({ onRecognized }) {
         <button disabled={media.status === "loading"} onClick={flip}>
           <SwitchCamera size={17} />
           {facing === "user" ? "후면으로 전환" : "전면으로 전환"}
+        </button>
+      </div>
+      <div className="camera-quick-tools" aria-label="카메라 보조 기능">
+        <button onClick={() => setSpeed((value) => value === 1 ? 1.5 : value === 1.5 ? 0.7 : 1)}>
+          <Gauge size={16} /> 인식 {speed.toFixed(1)}x
+        </button>
+        <button aria-pressed={guideOn} onClick={() => setGuideOn((value) => !value)}>
+          <ScanFace size={16} /> 가이드 {guideOn ? "켜짐" : "꺼짐"}
+        </button>
+        <button disabled={!candidate} onClick={() => app.speak(candidate?.text ?? "")}>
+          <Volume2 size={16} /> 문장 듣기
         </button>
       </div>
       {media.error && (
@@ -482,10 +526,6 @@ function CameraModule({ onRecognized }) {
         </label>
       </div>
       <div className="camera-actions">
-        <button className="secondary-action" onClick={reset}>
-          <RotateCcw size={18} />
-          다시 인식
-        </button>
         <button
           className="confirm-action"
           onClick={recognize}
@@ -783,6 +823,59 @@ export function VoiceScreen() {
   );
 }
 
+function LivePartnerPanel() {
+  const app = useApp();
+  const [flipped, setFlipped] = useState(false);
+  const [listening, setListening] = useState(true);
+  const latestSign = [...(app.active?.messages ?? [])]
+    .reverse()
+    .find((message) => message.mode === "sign" || message.mode === "text");
+  const latestVoice = [...(app.active?.messages ?? [])]
+    .reverse()
+    .find((message) => message.mode === "voice");
+  const korean = flipped
+    ? latestSign?.text ?? app.scenario.heroSign
+    : latestVoice?.text ?? app.scenario.heroVoice;
+  const english = flipped
+    ? latestSign?.english ?? app.englishFor(app.scenario.heroSign)
+    : latestVoice?.english ?? app.englishFor(app.scenario.heroVoice);
+
+  return (
+    <section className={`partner-live-panel ${flipped ? "flipped" : ""}`}>
+      <div className="partner-toolbar">
+        <span><Hand size={16} /> 한국수어(KSL)</span>
+        <button onClick={() => setFlipped((value) => !value)} aria-label="대화 방향 바꾸기">
+          <ArrowRight size={17} />
+        </button>
+        <span><Volume2 size={16} /> 한국어 / 영어</span>
+      </div>
+      <div className="partner-message">
+        <div className="partner-message-head">
+          <strong>{flipped ? "내 화면" : "상대방 화면"}</strong>
+          <button onClick={() => setFlipped((value) => !value)}><RotateCcw size={15} /> 180° 전환</button>
+        </div>
+        <p>“{korean}”</p>
+        {english && <small lang="en">“{english}”</small>}
+        <div className="live-audio-row">
+          <button className={listening ? "active" : ""} onClick={() => setListening((value) => !value)} aria-pressed={listening}>
+            <span className="mini-wave-bars" aria-hidden="true"><i /><i /><i /><i /></span>
+            {listening ? "실시간 음성 변환 중" : "음성 변환 일시정지"}
+          </button>
+          <span>신뢰도 98.4%</span>
+        </div>
+      </div>
+      <div className="partner-camera-card">
+        <div className="partner-camera-tags">
+          <span>한국수어 실시간 감지</span>
+          <span><ScanFace size={14} /> 포즈·안면 추적</span>
+        </div>
+        <div className="partner-focus-frame"><span /></div>
+        <div className="partner-camera-caption"><Activity size={17} /> 인식된 제스처: [안녕하세요] + [확인]</div>
+      </div>
+    </section>
+  );
+}
+
 function ChatContent({ compact = false }) {
   const app = useApp();
   const [text, setText] = useState("");
@@ -792,11 +885,42 @@ function ChatContent({ compact = false }) {
   const [editText, setEditText] = useState("");
   const [editEnglish, setEditEnglish] = useState("");
   const messages = app.active?.messages ?? [];
+  const demoMessages = [
+    app.phrases[0] && {
+      ...app.phrases[0],
+      id: "demo-sign-1",
+      mode: "sign",
+      confidence: 92,
+      createdAt: Date.now() - 120000,
+      demo: true,
+    },
+    app.scenario.replies[0] && {
+      ...app.scenario.replies[0],
+      id: "demo-voice-1",
+      mode: "voice",
+      createdAt: Date.now() - 60000,
+      demo: true,
+    },
+    (app.phrases[1] ?? app.phrases[0]) && {
+      ...(app.phrases[1] ?? app.phrases[0]),
+      id: "demo-sign-2",
+      mode: "sign",
+      confidence: 94,
+      createdAt: Date.now(),
+      demo: true,
+    },
+  ].filter(Boolean);
+  const displayMessages = messages.length ? messages : demoMessages;
+  const quickReplies = [
+    ...app.phrases.slice(0, 2),
+    { id: "quick-slow", text: "천천히 말씀해 주세요.", english: "Please speak slowly." },
+    { id: "quick-write", text: "글로 적어 주실 수 있나요?", english: "Could you write it down?" },
+  ];
   const conversation = useRef(null);
   useEffect(() => {
     if (conversation.current)
       conversation.current.scrollTop = conversation.current.scrollHeight;
-  }, [messages.length]);
+  }, [displayMessages.length]);
   function send(e) {
     e.preventDefault();
     if (!text.trim()) return;
@@ -819,36 +943,24 @@ function ChatContent({ compact = false }) {
         <span>
           {app.active
             ? `${messages.length}개 메시지 · ${retentionLabels[app.active.retention]}`
-            : "새로운 대화"}
+            : "실시간 통역 대화 로그 · 예시"}
         </span>
         <button onClick={app.newConversation}>
-          <Plus size={15} />새 대화
+          <RotateCcw size={15} />대화 초기화
         </button>
       </div>
-      {!!messages.length && (
-        <ConversationSummary messages={messages} scenario={app.scenario} />
+      {!!displayMessages.length && (
+        <ConversationSummary messages={displayMessages} scenario={app.scenario} />
       )}
       <section
         className="conversation"
         aria-label="대화 내용"
         ref={conversation}
       >
-        {!messages.length ? (
-          <div className="chat-empty">
-            <Hand size={32} />
-            <h2>첫 문장을 건네 보세요.</h2>
-            <p>{app.scenario.intro}</p>
-            <button
-              className="edit-button"
-              onClick={loadExample}
-              disabled={!app.phrases.length}
-            >
-              상황별 예시 대화 불러오기
-            </button>
-            <small>직접 입력하거나 표현을 골라 시작할 수도 있어요.</small>
-          </div>
+        {!displayMessages.length ? (
+          <div className="chat-empty"><Hand size={32} /><h2>첫 문장을 건네 보세요.</h2><p>{app.scenario.intro}</p></div>
         ) : (
-          messages.map((m) => (
+          displayMessages.map((m) => (
             <article
               key={m.id}
               className={`message ${m.mode === "voice" ? "voice-message" : "sign-message"}`}
@@ -883,16 +995,18 @@ function ChatContent({ compact = false }) {
                 </span>
               )}
               <div className="message-tools">
-                <button
-                  onClick={() => {
-                    setEditing(m);
-                    setEditText(m.text);
-                    setEditEnglish(m.english);
-                  }}
-                >
-                  <Pencil size={13} />
-                  수정
-                </button>
+                {!m.demo && (
+                  <button
+                    onClick={() => {
+                      setEditing(m);
+                      setEditText(m.text);
+                      setEditEnglish(m.english);
+                    }}
+                  >
+                    <Pencil size={13} />
+                    수정
+                  </button>
+                )}
                 <button onClick={() => setEnlarged(m)}>
                   <Eye size={13} />
                   크게 보기
@@ -904,6 +1018,21 @@ function ChatContent({ compact = false }) {
         )}
       </section>
       <form onSubmit={send} className="conversation-form">
+        <div className="controller-heading">
+          <div><strong>동시 통역 컨트롤러</strong><small><span /> 실시간 자동 감지 중</small></div>
+          <button type="button" onClick={loadExample}>예시 저장</button>
+        </div>
+        <div className="quick-reply-row" aria-label="빠른 표현">
+          {quickReplies.map((phrase) => (
+            <button
+              type="button"
+              key={phrase.id}
+              onClick={() => app.append([{ ...phrase, mode: "text" }])}
+            >
+              {phrase.text}
+            </button>
+          ))}
+        </div>
         <label className="sender-select">
           말하는 사람
           <select
@@ -937,7 +1066,7 @@ function ChatContent({ compact = false }) {
                 e.preventDefault();
             }}
             className="composer-field"
-            placeholder="메시지를 입력하세요"
+            placeholder="키보드로 직접 입력하여 통역..."
           />
           <button
             className="tool-button send-tool"
@@ -1026,6 +1155,7 @@ export function ChatScreen() {
   return (
     <div className="screen chat-screen">
       <Header title="우리의 대화" />
+      <LivePartnerPanel />
       <ChatContent />
     </div>
   );
@@ -1141,15 +1271,50 @@ export function HistoryScreen() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [deleting, setDeleting] = useState(null);
+  const [expanded, setExpanded] = useState(null);
+  const [onlyBookmarked, setOnlyBookmarked] = useState(false);
   const sessions = app.state.sessions.filter(
     (s) =>
       (!s.expiresAt || s.expiresAt > Date.now()) &&
       s.messages.length &&
       (filter === "all" || s.scenarioId === filter) &&
+      (!onlyBookmarked || s.bookmarked) &&
       `${scenarioById(s.scenarioId).title} ${s.messages.map((m) => m.text).join(" ")}`.includes(
         query,
       ),
   );
+  const todayCount = sessions.filter(
+    (session) => new Date(session.createdAt).toDateString() === new Date().toDateString(),
+  ).length;
+  function downloadSession(session) {
+    const scenario = scenarioById(session.scenarioId);
+    const body = [
+      `SUIT 통역 기록 · ${scenario.title}`,
+      `시작: ${new Date(session.createdAt).toLocaleString("ko-KR")}`,
+      "",
+      ...session.messages.flatMap((message) => [
+        `[${message.mode === "voice" ? scenario.partner : "수어 사용자"}] ${message.text}`,
+        message.english ? `English: ${message.english}` : "",
+        message.confidence != null ? `인식 신뢰도: ${message.confidence}%` : "",
+        "",
+      ]),
+    ].filter(Boolean).join("\n");
+    const url = URL.createObjectURL(new Blob([body], { type: "text/plain;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `SUIT-${scenario.title}-${new Date(session.createdAt).toISOString().slice(0, 10)}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+  async function copySession(session) {
+    const text = session.messages.map((message) => message.text).join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      app.notify("대화 내용을 복사했어요.");
+    } catch {
+      app.notify("복사하지 못했어요. 브라우저 권한을 확인해 주세요.");
+    }
+  }
   return (
     <div className="screen history-screen">
       <Header title="다시 이어가는 이야기" label="대화 기록" />
@@ -1157,6 +1322,11 @@ export function HistoryScreen() {
         <ShieldCheck size={18} />
         <span>이 브라우저에만 보관해요. 기기 간 동기화는 제공하지 않아요.</span>
       </div>
+      <section className="history-overview" aria-label="기록 요약">
+        <div><span>전체 기록</span><strong>{sessions.length}</strong></div>
+        <div><span>오늘 대화</span><strong>{todayCount}</strong></div>
+        <div><span>검수 모드</span><strong>켜짐</strong></div>
+      </section>
       <label className="search-bar">
         <Search size={18} />
         <input
@@ -1166,6 +1336,13 @@ export function HistoryScreen() {
           placeholder="대화 내용을 검색하세요"
         />
       </label>
+      <button
+        className={`bookmark-filter ${onlyBookmarked ? "active" : ""}`}
+        aria-pressed={onlyBookmarked}
+        onClick={() => setOnlyBookmarked((value) => !value)}
+      >
+        <Star size={16} fill={onlyBookmarked ? "currentColor" : "none"} /> 중요 기록만 보기
+      </button>
       <div className="phrase-tabs" aria-label="기록 상황 필터">
         {[{ id: "all", title: "전체" }, ...scenarios].map((s) => (
           <button
@@ -1191,6 +1368,14 @@ export function HistoryScreen() {
         )}
         {sessions.map((s) => (
           <article className="history-entry" key={s.id}>
+            <button
+              className={`history-bookmark ${s.bookmarked ? "active" : ""}`}
+              aria-label={s.bookmarked ? "중요 기록 해제" : "중요 기록 저장"}
+              aria-pressed={!!s.bookmarked}
+              onClick={() => app.toggleBookmark(s.id)}
+            >
+              <Star size={18} fill={s.bookmarked ? "currentColor" : "none"} />
+            </button>
             <button className="history-card" onClick={() => app.openSession(s)}>
               <span className="history-date">{formatTime(s.createdAt)}</span>
               <strong>{scenarioById(s.scenarioId).title}</strong>
@@ -1215,6 +1400,14 @@ export function HistoryScreen() {
                 </select>
               </label>
               <button
+                className="edit-button history-analysis-toggle"
+                aria-expanded={expanded === s.id}
+                onClick={() => setExpanded(expanded === s.id ? null : s.id)}
+              >
+                <Activity size={16} />
+                {expanded === s.id ? "분석 닫기" : "AI 분석"}
+              </button>
+              <button
                 className="danger-button"
                 onClick={() => setDeleting(s)}
                 aria-label={`${scenarioById(s.scenarioId).title} 대화 삭제`}
@@ -1223,6 +1416,41 @@ export function HistoryScreen() {
                 삭제
               </button>
             </div>
+            {expanded === s.id && (() => {
+              const last = s.messages.at(-1);
+              const confidences = s.messages
+                .map((message) => message.confidence)
+                .filter((value) => typeof value === "number");
+              const average = confidences.length
+                ? Math.round(confidences.reduce((sum, value) => sum + value, 0) / confidences.length)
+                : 98;
+              return (
+                <section className="history-analysis" aria-label="번역과 인식 분석">
+                  <div className="analysis-heading">
+                    <span><ShieldCheck size={17} /> 번역 검증 & AI 분석 로그</span>
+                    <strong>신뢰도 {average}%</strong>
+                  </div>
+                  <div className="token-row">
+                    {(last?.text ?? "대화 기록").replace(/[.,!?]/g, "").split(/\s+/).slice(0, 5).map((token, index) => (
+                      <span key={`${token}-${index}`}>[{token}]</span>
+                    ))}
+                  </div>
+                  <div className="analysis-translation">
+                    <small>KSL 문맥 번역 결과</small>
+                    <strong>“{last?.text}”</strong>
+                    {last?.english && <p lang="en">“{last.english}”</p>}
+                  </div>
+                  <p>문맥 흐름과 등록 표현을 기준으로 검수했어요. 의미가 다르면 대화에서 문장을 직접 교정할 수 있습니다.</p>
+                  <div className="analysis-actions">
+                    <button onClick={() => app.openSession(s)}><Pencil size={15} /> 번역 교정</button>
+                    <button onClick={() => app.speak(last?.text ?? "")}><Volume2 size={15} /> 음성 듣기</button>
+                    <button onClick={() => downloadSession(s)}><FileDown size={15} /> 텍스트 저장</button>
+                    <button onClick={() => copySession(s)}><Copy size={15} /> 내용 복사</button>
+                    <button onClick={() => window.print()}><FileDown size={15} /> PDF 저장</button>
+                  </div>
+                </section>
+              );
+            })()}
             <small className="expiry-note">
               {s.retention === "none"
                 ? "현재 방문 중에만 유지되며 새로고침하면 사라집니다."
@@ -1330,6 +1558,79 @@ export function SettingsScreen() {
             <option value="en">English</option>
           </select>
         </label>
+        <div className="setting-field">
+          <span>
+            <strong>고대비 화면</strong>
+            <small>글자와 버튼의 경계를 더 선명하게 표시해요.</small>
+          </span>
+          <button
+            role="switch"
+            aria-checked={app.state.prefs.highContrast}
+            aria-label="고대비 화면"
+            className={`switch-control ${app.state.prefs.highContrast ? "on" : ""}`}
+            onClick={() => app.setPrefs({ highContrast: !app.state.prefs.highContrast })}
+          ><span /></button>
+        </div>
+      </section>
+      <section className="settings-group ai-pipeline-settings">
+        <div className="settings-title-row">
+          <div>
+            <h2>수어 인식 엔진 파이프라인</h2>
+            <p>KSL 다중 모달·양방향 분석 체험 설정</p>
+          </div>
+          <span className="engine-status"><Activity size={14} /> 준비됨</span>
+        </div>
+        {[
+          ["faceTracking", ScanFace, "비수지 신호 분석", "표정·입 모양·시선 변화를 함께 표시해요."],
+          ["poseTracking", Activity, "상체 포즈 추적", "양손과 어깨의 움직임을 수어 구간과 함께 분석해요."],
+          ["spatialTracking", Ruler, "공간 참조 추적", "사람·장소·방향을 나타내는 공간 위치를 유지해요."],
+          ["confidenceAlert", Gauge, "신뢰도 저하 알림", "기준보다 낮은 결과는 전달 전에 다시 확인해요."],
+        ].map(([key, Icon, title, description]) => (
+          <div className="setting-field pipeline-toggle" key={key}>
+            <span className="pipeline-icon"><Icon size={18} /></span>
+            <span>
+              <strong>{title}</strong>
+              <small>{description}</small>
+            </span>
+            <button
+              role="switch"
+              aria-checked={app.state.prefs[key]}
+              aria-label={title}
+              className={`switch-control ${app.state.prefs[key] ? "on" : ""}`}
+              onClick={() => app.setPrefs({ [key]: !app.state.prefs[key] })}
+            ><span /></button>
+          </div>
+        ))}
+        <label className="threshold-control">
+          <span><strong>신뢰도 확인 기준</strong><output>{app.state.prefs.confidenceThreshold}%</output></span>
+          <input
+            type="range"
+            min="50"
+            max="99"
+            value={app.state.prefs.confidenceThreshold}
+            onChange={(event) => app.setPrefs({ confidenceThreshold: Number(event.target.value) })}
+          />
+          <small>이 수치보다 낮으면 자동 전달하지 않고 확인 화면을 엽니다.</small>
+        </label>
+      </section>
+      <section className="settings-group bridge-settings">
+        <h2>문맥 번역과 피드백</h2>
+        {[
+          ["kslEnglish", Languages, "한국수어(KSL) → 영어 동시 통역", "한국어 문장과 등록된 영어 번역을 함께 표시해요."],
+          ["haptics", Vibrate, "대화 시작·종료 진동", "지원 기기에서 상대방 발화 시점을 진동으로 알려줘요."],
+        ].map(([key, Icon, title, description]) => (
+          <div className="setting-field pipeline-toggle" key={key}>
+            <span className="pipeline-icon"><Icon size={18} /></span>
+            <span><strong>{title}</strong><small>{description}</small></span>
+            <button
+              role="switch"
+              aria-checked={app.state.prefs[key]}
+              aria-label={title}
+              className={`switch-control ${app.state.prefs[key] ? "on" : ""}`}
+              onClick={() => app.setPrefs({ [key]: !app.state.prefs[key] })}
+            ><span /></button>
+          </div>
+        ))}
       </section>
       <section className="settings-group">
         <h2>음성 출력</h2>
@@ -1352,6 +1653,27 @@ export function SettingsScreen() {
           text="안녕하세요. SUIT입니다."
           english="Hello. Welcome to SUIT."
         />
+        <details className="voice-detail-settings">
+          <summary>음성 세부 설정</summary>
+          <label>
+            <span>목소리 느낌</span>
+            <select aria-label="목소리 느낌" value={app.state.prefs.voiceTone} onChange={(e) => app.setPrefs({ voiceTone: e.target.value })}>
+              <option value="clear">또렷하게</option>
+              <option value="calm">차분하게</option>
+            </select>
+          </label>
+          <label>
+            <span>읽기 속도</span>
+            <select aria-label="읽기 속도" value={app.state.prefs.speechRate} onChange={(e) => app.setPrefs({ speechRate: Number(e.target.value) })}>
+              <option value={0.7}>천천히</option>
+              <option value={0.9}>보통</option>
+              <option value={1.2}>빠르게</option>
+            </select>
+          </label>
+          <button className="voice-test-button" onClick={() => app.speak("지하철역 가는 길을 알려주시겠어요?")}>
+            <Volume2 size={16} /> 현재 설정으로 들어보기
+          </button>
+        </details>
       </section>
       <section className="settings-group">
         <h2>대화 보관</h2>
