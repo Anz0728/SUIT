@@ -23,6 +23,10 @@ export const DEFAULT_PREFS = {
   haptics: true,
   highContrast: false,
   voiceTone: "clear",
+  voiceGender: "neutral",
+  voiceAge: "adult",
+  voiceStyles: ["friendly"],
+  voiceURI: "",
   speechRate: 0.9,
 };
 export const STORAGE_KEY = "modoo.frontend.v2";
@@ -112,6 +116,15 @@ export function loadState(raw, now = Date.now()) {
       prefs.confidenceThreshold = data.prefs.confidenceThreshold;
     if (["clear", "calm"].includes(data.prefs?.voiceTone))
       prefs.voiceTone = data.prefs.voiceTone;
+    if (["neutral", "feminine", "masculine"].includes(data.prefs?.voiceGender))
+      prefs.voiceGender = data.prefs.voiceGender;
+    if (["young", "adult", "older"].includes(data.prefs?.voiceAge))
+      prefs.voiceAge = data.prefs.voiceAge;
+    if (Array.isArray(data.prefs?.voiceStyles))
+      prefs.voiceStyles = data.prefs.voiceStyles.filter((style) =>
+        ["bright", "soft", "calm", "confident", "friendly"].includes(style),
+      );
+    if (typeof data.prefs?.voiceURI === "string") prefs.voiceURI = data.prefs.voiceURI;
     if (
       typeof data.prefs?.speechRate === "number" &&
       [0.7, 0.9, 1.2].includes(data.prefs.speechRate)

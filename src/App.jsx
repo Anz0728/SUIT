@@ -130,8 +130,8 @@ function HomeScreen({ onGuide }) {
       <section className="start-section" aria-labelledby="start-title">
         <div className="section-heading"><div><span>지금 시작하기</span><h2 id="start-title">어떤 방식이 편한가요?</h2></div></div>
         <div className="start-actions">
-          <button className="start-action sign-action" onClick={() => app.setScreen("camera")}><span className="start-icon"><Hand size={25} /></span><span><strong>내 수어를 글자로</strong><small>카메라와 예시 문장으로 체험해요</small></span><ArrowRight size={20} /></button>
-          <button className="start-action voice-action" onClick={() => app.setScreen("voice")}><span className="start-icon"><Mic size={25} /></span><span><strong>상대방의 말을 글자로</strong><small>마이크로 받아쓰거나 직접 입력해요</small></span><ArrowRight size={20} /></button>
+          <button className="start-action sign-action" onClick={() => app.setScreen("camera")}><span className="start-icon"><Hand size={34} /></span><span><strong>수어로 말하기</strong><small>내 표현을 골라 소리로 전해요</small></span><ArrowRight size={24} /></button>
+          <button className="start-action voice-action" onClick={() => app.setScreen("voice")}><span className="start-icon"><Mic size={34} /></span><span><strong>상대방 말 보기</strong><small>마이크로 받아쓴 말을 확인해요</small></span><ArrowRight size={24} /></button>
         </div>
       </section>
 
@@ -143,7 +143,7 @@ function HomeScreen({ onGuide }) {
 
       <section className="home-shortcuts" aria-label="대화 도구">
         <button onClick={() => app.setScreen("phrases")}><BookOpen size={19} /><span>자주 쓰는 표현</span><ChevronRight size={17} /></button>
-        <button onClick={onGuide}><Sparkles size={19} /><span>이용 방법</span><ChevronRight size={17} /></button>
+        <button onClick={onGuide}><Hand size={22} /><span>그림으로 사용법 보기</span><ChevronRight size={17} /></button>
       </section>
 
       <section className="scenario-card">
@@ -171,12 +171,12 @@ function GuideDialog({ onClose }) {
     <div className="dialog-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <section className="guide-card" role="dialog" aria-modal="true" aria-labelledby="guide-title">
         <div className="guide-heading"><span><Languages size={22} /></span><button onClick={onClose} aria-label="닫기"><X size={20} /></button></div>
-        <h2 id="guide-title">대화를 시작하는 세 가지 방법</h2>
-        {[
-          [Camera, "내 수어를 글자로 보여주기", "현재는 카메라 미리보기와 선택한 문장으로 흐름을 체험합니다."],
-          [Mic, "상대방의 말을 글자로 보기", "지원 브라우저에서 마이크로 받아쓴 뒤 내용을 확인합니다."],
-          [MessageCircle, "한 화면에서 함께 대화하기", "내 말과 상대방의 말을 번갈아 적고 크게 보여줄 수 있습니다."],
-        ].map(([Icon, title, body], index) => <div className="guide-row" key={title}><span>{index + 1}</span><Icon size={21} /><div><strong>{title}</strong><p>{body}</p></div></div>)}
+        <h2 id="guide-title">그림으로 보는 사용법</h2>
+        <div className="visual-guide-steps">
+          <div><Hand size={34} /><ArrowRight size={18} /><Camera size={34} /><ArrowRight size={18} /><Volume2 size={34} /><strong>수어 → 카메라 → 소리</strong><small>현재 카메라는 미리보기이며 선택한 예시 문장을 소리로 전합니다.</small></div>
+          <div><Mic size={34} /><ArrowRight size={18} /><MessageCircle size={34} /><ArrowRight size={18} /><Hand size={34} /><strong>말 → 마이크 → 수어 화면</strong><small>마이크 받아쓰기는 사용 가능해요. 실제 수어 영상은 아직 없습니다.</small></div>
+        </div>
+        <p className="guide-video-status"><Hand size={18} /> 수어로 설명하는 안내 영상은 아직 준비되지 않았어요.</p>
         <button className="primary-button" onClick={onClose}>시작할게요 <Check size={18} /></button>
       </section>
     </div>

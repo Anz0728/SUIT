@@ -16,6 +16,7 @@ import {
   applyRetention,
   pruneSessions,
 } from "./scenarios";
+import { speechProfile } from "./voiceProfile.js";
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
@@ -93,8 +94,14 @@ export function AppProvider({ children }) {
     const token = speechToken.current;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = language === "en" ? "en-US" : "ko-KR";
-    utterance.rate = state.prefs.speechRate;
-    utterance.pitch = state.prefs.voiceTone === "calm" ? 0.9 : 1.05;
+    const profile = speechProfile(state.prefs);
+    utterance.rate = profile.rate;
+    utterance.pitch = profile.pitch;
+    const selectedVoice = window.speechSynthesis.getVoices().find(
+      (voice) => voice.voiceURI === state.prefs.voiceURI &&
+        voice.lang.toLowerCase().startsWith(language === "en" ? "en" : "ko"),
+    );
+    if (selectedVoice) utterance.voice = selectedVoice;
     utterance.onstart = () =>
       token === speechToken.current && setSpeaking(true);
     utterance.onend = () => token === speechToken.current && setSpeaking(false);
