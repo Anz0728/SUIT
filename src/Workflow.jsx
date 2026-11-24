@@ -5,12 +5,14 @@ import {
   ArrowRight,
   Camera,
   Mic,
+  MessageCircle,
+  MapPin,
+  ShoppingBag,
   RotateCcw,
   Volume2,
   Square,
   Send,
   Plus,
-  Play,
   X,
   Check,
   Search,
@@ -53,10 +55,10 @@ import {
 } from "./scenarios";
 
 export const situationIcons = {
-  hospital: HeartPulse,
-  school: GraduationCap,
-  public: Landmark,
-  office: Building2,
+  hospital: MessageCircle,
+  school: Users,
+  public: MapPin,
+  office: ShoppingBag,
 };
 const formatTime = (value) =>
   new Intl.DateTimeFormat("ko-KR", {
@@ -65,64 +67,27 @@ const formatTime = (value) =>
     hour: "2-digit",
     minute: "2-digit",
   }).format(value);
-const workflowGuides = {
-  hospital: {
-    purpose: "접수·예약·기초 문진",
-    question: "예약 성함, 신분증, 불편한 부위를 차례로 확인해 주세요.",
-    next: "접수 후 대기 장소를 안내하고, 전문 설명은 담당자 또는 통역 확인으로 넘겨요.",
-  },
-  public: {
-    purpose: "서류 발급·민원 신청",
-    question: "발급받을 서류, 신분증, 신청서 작성 여부를 확인해 주세요.",
-    next: "담당 창구와 수수료, 수령 시점을 짧은 문장으로 남겨 주세요.",
-  },
-  school: {
-    purpose: "상담·수업 지원",
-    question: "상담 주제, 일정, 필요한 문자 지원 여부를 확인해 주세요.",
-    next: "확정된 상담 시간과 준비할 내용을 대화 기록에 남겨요.",
-  },
-  office: {
-    purpose: "복지 상담·지원 신청",
-    question: "필요한 지원, 제출 서류, 회의 내용 공유 방식을 확인해 주세요.",
-    next: "신청 절차와 다음 연락 방법을 글로 남겨 후속 안내 공백을 줄여요.",
-  },
-};
 function ConversationSummary({ messages, scenario }) {
-  const guide = workflowGuides[scenario.id] ?? workflowGuides.hospital;
   const lastUser = [...messages]
     .reverse()
     .find((m) => m.mode === "sign" || m.mode === "text");
-  const lastStaff = [...messages].reverse().find((m) => m.mode === "voice");
+  const lastPartner = [...messages].reverse().find((m) => m.mode === "voice");
   return (
     <section className="workflow-summary" aria-label="대화 요약">
       <div className="summary-head">
-        <span>대화 요약</span>
+        <span>지금 나눈 대화</span>
         <strong>{scenario.title}</strong>
       </div>
       <div className="summary-grid">
         <div>
-          <small>방문 목적</small>
-          <strong>{lastUser?.text ?? guide.purpose}</strong>
+          <small>내 말</small>
+          <strong>{lastUser?.text ?? "아직 내 문장이 없어요."}</strong>
         </div>
         <div>
-          <small>최근 안내</small>
-          <strong>{lastStaff?.text ?? "상대방의 말을 추가하면 여기에 정리돼요."}</strong>
+          <small>상대방의 말</small>
+          <strong>{lastPartner?.text ?? "상대방의 말을 추가하면 여기에 보여요."}</strong>
         </div>
       </div>
-      <ol className="next-checks">
-        <li>
-          <span>후속 질문</span>
-          {guide.question}
-        </li>
-        <li>
-          <span>다음 절차</span>
-          {guide.next}
-        </li>
-        <li>
-          <span>안전 기준</span>
-          진단·처방·수급 자격 판단은 자동 처리하지 않고 담당자 확인으로 넘겨요.
-        </li>
-      </ol>
     </section>
   );
 }
@@ -250,9 +215,9 @@ export function SituationScreen() {
   const app = useApp();
   return (
     <div className="screen situation-screen">
-      <Header label="상황 선택" title="어디에서 대화하나요?" />
+      <Header label="상황 선택" title="어떤 대화를 나누나요?" />
       <p className="screen-note">
-        상황에 맞춰 추천 표현, 상대방의 예시 응답, 인식 안내가 함께 바뀝니다.
+        필요한 표현을 고르면 예시 대화도 함께 바뀝니다.
         이전 대화는 기록에서 이어갈 수 있어요.
       </p>
       <section className="situation-list" aria-label="상황 목록">
@@ -520,7 +485,7 @@ export function CameraScreen() {
   const app = useApp();
   return (
     <div className="screen camera-screen workflow-camera">
-      <Header title="손끝의 이야기를 전해요" />
+      <Header title="내 수어를 글자로" />
       <CameraModule
         onRecognized={(p) => {
           app.setDraft(p);
@@ -616,15 +581,15 @@ function ReviewContent({ value, onDone, onBack }) {
       )}
       {low && (
         <div className="handoff-panel">
-          <strong>전문 확인이 필요한 대화로 표시</strong>
+          <strong>이 문장은 한 번 더 확인해 주세요</strong>
           <p>
-            낮은 확신도 결과는 바로 확정하지 않고 재입력, 직원 확인, 전문
-            수어통역 연결 대상으로 분류합니다.
+            예시 결과가 불확실한 경우에는 수정하거나 다시 시도한 뒤
+            상대방에게 보여주세요.
           </p>
           <div>
-            <span>재입력 요청</span>
-            <span>직원 확인</span>
-            <span>통역 연결</span>
+            <span>다시 시도</span>
+            <span>직접 수정</span>
+            <span>내용 확인</span>
           </div>
         </div>
       )}
@@ -697,44 +662,73 @@ export function ResultScreen() {
 export function VoiceScreen() {
   const app = useApp();
   const [index, setIndex] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [ready, setReady] = useState(false);
-  const timer = useRef(null);
+  const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [error, setError] = useState("");
+  const recognition = useRef(null);
+  const SpeechRecognition = typeof window === "undefined"
+    ? null
+    : window.SpeechRecognition || window.webkitSpeechRecognition;
   const reply = app.scenario.replies[index];
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => recognition.current?.abort(), []);
   const record = () => {
-    if (busy) {
-      clearTimeout(timer.current);
-      setBusy(false);
+    if (listening) {
+      recognition.current?.stop();
       return;
     }
-    setBusy(true);
-    setReady(false);
-    timer.current = setTimeout(() => {
-      setBusy(false);
-      setReady(true);
-    }, 1000);
+    if (!SpeechRecognition) return;
+    const next = new SpeechRecognition();
+    recognition.current = next;
+    next.lang = "ko-KR";
+    next.continuous = false;
+    next.interimResults = false;
+    next.onresult = (event) => {
+      const text = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      setTranscript(text);
+      if (!text) setError("말을 알아듣지 못했어요. 다시 시도하거나 직접 입력해 주세요.");
+    };
+    next.onerror = (event) => {
+      setError(event.error === "not-allowed"
+        ? "마이크 권한을 허용한 뒤 다시 시도해 주세요."
+        : "음성을 받아쓰지 못했어요. 다시 시도하거나 직접 입력해 주세요.");
+      setListening(false);
+    };
+    next.onend = () => setListening(false);
+    setTranscript("");
+    setError("");
+    try {
+      next.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+      setError("마이크를 시작하지 못했어요. 브라우저 설정을 확인해 주세요.");
+    }
   };
   return (
     <div className="screen voice-screen">
-      <Header title={`${app.scenario.partner}의 말을 글자로`} />
+      <Header title="상대방의 말을 글자로" />
       <div className="feature-note">
         <Mic size={17} />
         <span>
-          음성 인식 체험 화면이에요. 실제 음성을 녹음하거나 전송하지 않으며,
-          선택한 예시를 표시합니다.
+          {SpeechRecognition
+            ? "마이크로 한국어 말을 받아씁니다. 브라우저의 음성 인식 서비스가 음성을 처리할 수 있어요."
+            : "이 브라우저는 음성 받아쓰기를 지원하지 않아요. 예시를 보거나 대화 화면에서 직접 입력해 주세요."}
         </span>
       </div>
       <section
-        className={`voice-panel ${busy ? "is-recording" : ""}`}
-        aria-label="음성 자막 예시 체험"
+        className={`voice-panel ${listening ? "is-recording" : ""}`}
+        aria-label="상대방의 말 받아쓰기"
       >
         <button
           className="record-button"
           onClick={record}
-          aria-label={busy ? "예시 준비 중지" : "예시 자막 보기"}
+          disabled={!SpeechRecognition}
+          aria-label={listening ? "받아쓰기 중지" : "마이크로 받아쓰기 시작"}
         >
-          {busy ? <Square size={30} /> : <Play size={32} fill="currentColor" />}
+          {listening ? <Square size={30} /> : <Mic size={32} />}
         </button>
         <div className="wave-bars" aria-hidden="true">
           {Array.from({ length: 7 }, (_, i) => (
@@ -742,22 +736,40 @@ export function VoiceScreen() {
           ))}
         </div>
         <p role="status">
-          {busy
-            ? "예시 문장을 준비하고 있어요…"
-            : ready
-              ? "예시 문장을 확인해 주세요"
-              : "버튼을 눌러 자막 예시를 확인해요"}
+          {listening ? "상대방의 말을 듣고 있어요…" : transcript
+            ? "받아쓴 문장을 확인하고 수정해 주세요"
+            : "마이크 버튼을 누르면 받아쓰기를 시작해요"}
         </p>
       </section>
+      {error && <p className="field-error" role="alert">{error}</p>}
+      <label className="field-label">
+        받아쓴 문장
+        <textarea
+          className="composer-field"
+          value={transcript}
+          onChange={(event) => setTranscript(event.target.value)}
+          placeholder="마이크로 받아쓰거나 여기에 직접 입력하세요"
+          rows={3}
+        />
+      </label>
+      <div className="voice-actions">
+        <button
+          className="done-button"
+          disabled={!transcript.trim() || listening}
+          onClick={() => app.preview({ text: transcript.trim(), english: "" }, "voice")}
+        >
+          문장 확인 <ArrowRight size={17} />
+        </button>
+      </div>
+      <details className="advanced-settings">
+        <summary>예시 대화 체험하기</summary>
       <label className="field-label">
         상대방의 예시 응답
         <select
           aria-label="상대방의 예시 응답"
           value={index}
-          disabled={busy}
           onChange={(e) => {
             setIndex(Number(e.target.value));
-            setReady(false);
           }}
         >
           {app.scenario.replies.map((r, i) => (
@@ -767,32 +779,19 @@ export function VoiceScreen() {
           ))}
         </select>
       </label>
-      {ready && (
-        <section className="transcript-card">
-          <p className="recognized-label">예시 음성 → 텍스트</p>
-          <MessageText {...reply} />
-        </section>
-      )}
+      <section className="transcript-card">
+        <p className="recognized-label">예시 문장</p>
+        <MessageText {...reply} />
+      </section>
       <div className="voice-actions">
         <button
           className="edit-button"
-          onClick={() => {
-            clearTimeout(timer.current);
-            setBusy(false);
-            setReady(false);
-            setIndex((i) => (i + 1) % app.scenario.replies.length);
-          }}
-        >
-          다른 응답 체험
-        </button>
-        <button
-          className="done-button"
-          disabled={!ready || busy}
           onClick={() => app.preview(reply, "voice")}
         >
-          문장 확인 <ArrowRight size={17} />
+          이 예시 사용 <ArrowRight size={17} />
         </button>
       </div>
+      </details>
       <button className="text-link" onClick={() => app.setScreen("chat")}>
         상대방의 말을 직접 입력하기 <ArrowRight size={16} />
       </button>
@@ -819,11 +818,11 @@ function LivePartnerPanel() {
   return (
     <section className={`partner-live-panel ${flipped ? "flipped" : ""}`}>
       <div className="partner-toolbar">
-        <span><Hand size={16} /> 한국수어(KSL)</span>
+        <span><Hand size={16} /> 내 말</span>
         <button onClick={() => setFlipped((value) => !value)} aria-label="대화 방향 바꾸기">
           <ArrowRight size={17} />
         </button>
-        <span><Volume2 size={16} /> 한국어 / 영어</span>
+        <span><Volume2 size={16} /> 상대방 말</span>
       </div>
       <div className="partner-message">
         <div className="partner-message-head">
@@ -851,32 +850,7 @@ function ChatContent({ compact = false }) {
   const [editText, setEditText] = useState("");
   const [editEnglish, setEditEnglish] = useState("");
   const messages = app.active?.messages ?? [];
-  const demoMessages = [
-    app.phrases[0] && {
-      ...app.phrases[0],
-      id: "demo-sign-1",
-      mode: "sign",
-      confidence: 92,
-      createdAt: Date.now() - 120000,
-      demo: true,
-    },
-    app.scenario.replies[0] && {
-      ...app.scenario.replies[0],
-      id: "demo-voice-1",
-      mode: "voice",
-      createdAt: Date.now() - 60000,
-      demo: true,
-    },
-    (app.phrases[1] ?? app.phrases[0]) && {
-      ...(app.phrases[1] ?? app.phrases[0]),
-      id: "demo-sign-2",
-      mode: "sign",
-      confidence: 94,
-      createdAt: Date.now(),
-      demo: true,
-    },
-  ].filter(Boolean);
-  const displayMessages = messages.length ? messages : demoMessages;
+  const displayMessages = messages;
   const quickReplies = [
     ...app.phrases.slice(0, 2),
     { id: "quick-slow", text: "천천히 말씀해 주세요.", english: "Please speak slowly." },
@@ -897,9 +871,9 @@ function ChatContent({ compact = false }) {
     const first = app.phrases[0];
     if (!first) return;
     app.append([
-      { ...first, mode: "sign", confidence: 92 },
+      { ...first, mode: "sign" },
       { ...app.scenario.replies[0], mode: "voice" },
-      { ...(app.phrases[1] ?? first), mode: "sign", confidence: 94 },
+      { ...(app.phrases[1] ?? first), mode: "sign" },
     ]);
   }
   return (
@@ -909,7 +883,7 @@ function ChatContent({ compact = false }) {
         <span>
           {app.active
             ? `${messages.length}개 메시지 · ${retentionLabels[app.active.retention]}`
-            : "실시간 통역 대화 로그 · 예시"}
+            : "아직 저장된 대화가 없어요"}
         </span>
         <button onClick={app.newConversation}>
           <RotateCcw size={15} />대화 초기화
@@ -941,7 +915,7 @@ function ChatContent({ compact = false }) {
                 )}
                 <span>
                   {m.mode === "voice"
-                    ? app.scenario.partner
+                    ? "상대방"
                     : m.mode === "sign"
                       ? "수어 예시"
                       : "직접 입력"}
@@ -985,8 +959,8 @@ function ChatContent({ compact = false }) {
       </section>
       <form onSubmit={send} className="conversation-form">
         <div className="controller-heading">
-          <div><strong>동시 통역 컨트롤러</strong><small><span /> 실시간 자동 감지 중</small></div>
-          <button type="button" onClick={loadExample}>예시 저장</button>
+          <div><strong>대화에 문장 추가</strong><small>직접 입력하거나 표현을 선택하세요</small></div>
+          <button type="button" onClick={loadExample}>예시 대화 넣기</button>
         </div>
         <div className="quick-reply-row" aria-label="빠른 표현">
           {quickReplies.map((phrase) => (
@@ -1007,7 +981,7 @@ function ChatContent({ compact = false }) {
             onChange={(e) => setSender(e.target.value)}
           >
             <option value="text">나</option>
-            <option value="voice">{app.scenario.partner}</option>
+            <option value="voice">상대방</option>
           </select>
         </label>
         <div className="chat-composer">
@@ -1032,7 +1006,7 @@ function ChatContent({ compact = false }) {
                 e.preventDefault();
             }}
             className="composer-field"
-            placeholder="키보드로 직접 입력하여 통역..."
+            placeholder="전하고 싶은 말을 입력하세요"
           />
           <button
             className="tool-button send-tool"
@@ -1245,7 +1219,7 @@ export function HistoryScreen() {
       s.messages.length &&
       (filter === "all" || s.scenarioId === filter) &&
       (!onlyBookmarked || s.bookmarked) &&
-      `${scenarioById(s.scenarioId).title} ${s.messages.map((m) => m.text).join(" ")}`.includes(
+      `${s.scenarioTitle ?? scenarioById(s.scenarioId).title} ${s.messages.map((m) => m.text).join(" ")}`.includes(
         query,
       ),
   );
@@ -1253,22 +1227,22 @@ export function HistoryScreen() {
     (session) => new Date(session.createdAt).toDateString() === new Date().toDateString(),
   ).length;
   function downloadSession(session) {
-    const scenario = scenarioById(session.scenarioId);
+    const scenarioTitle = session.scenarioTitle ?? scenarioById(session.scenarioId).title;
     const body = [
-      `SUIT 통역 기록 · ${scenario.title}`,
+      `SUIT 대화 기록 · ${scenarioTitle}`,
       `시작: ${new Date(session.createdAt).toLocaleString("ko-KR")}`,
       "",
       ...session.messages.flatMap((message) => [
-        `[${message.mode === "voice" ? scenario.partner : "수어 사용자"}] ${message.text}`,
+        `[${message.mode === "voice" ? "상대방" : "나"}] ${message.text}`,
         message.english ? `English: ${message.english}` : "",
-        message.confidence != null ? `인식 신뢰도: ${message.confidence}%` : "",
+        message.confidence != null ? `예시 확신도: ${message.confidence}%` : "",
         "",
       ]),
     ].filter(Boolean).join("\n");
     const url = URL.createObjectURL(new Blob([body], { type: "text/plain;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `SUIT-${scenario.title}-${new Date(session.createdAt).toISOString().slice(0, 10)}.txt`;
+    anchor.download = `SUIT-${scenarioTitle}-${new Date(session.createdAt).toISOString().slice(0, 10)}.txt`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -1291,7 +1265,7 @@ export function HistoryScreen() {
       <section className="history-overview" aria-label="기록 요약">
         <div><span>전체 기록</span><strong>{sessions.length}</strong></div>
         <div><span>오늘 대화</span><strong>{todayCount}</strong></div>
-        <div><span>검수 모드</span><strong>켜짐</strong></div>
+        <div><span>중요 기록</span><strong>{sessions.filter((s) => s.bookmarked).length}</strong></div>
       </section>
       <label className="search-bar">
         <Search size={18} />
@@ -1344,7 +1318,7 @@ export function HistoryScreen() {
             </button>
             <button className="history-card" onClick={() => app.openSession(s)}>
               <span className="history-date">{formatTime(s.createdAt)}</span>
-              <strong>{scenarioById(s.scenarioId).title}</strong>
+              <strong>{s.scenarioTitle ?? scenarioById(s.scenarioId).title}</strong>
               <small>{s.messages.at(-1).text}</small>
               <span className="history-state">
                 {s.messages.length}개 메시지
@@ -1354,7 +1328,7 @@ export function HistoryScreen() {
               <label>
                 보관 방법
                 <select
-                  aria-label={`${scenarioById(s.scenarioId).title} 보관 방법`}
+                  aria-label={`${s.scenarioTitle ?? scenarioById(s.scenarioId).title} 보관 방법`}
                   value={s.retention}
                   onChange={(e) => app.setRetention(s.id, e.target.value)}
                 >
@@ -1371,12 +1345,12 @@ export function HistoryScreen() {
                 onClick={() => setExpanded(expanded === s.id ? null : s.id)}
               >
                 <Activity size={16} />
-                {expanded === s.id ? "분석 닫기" : "AI 분석"}
+                {expanded === s.id ? "자세히 닫기" : "기록 자세히"}
               </button>
               <button
                 className="danger-button"
                 onClick={() => setDeleting(s)}
-                aria-label={`${scenarioById(s.scenarioId).title} 대화 삭제`}
+                aria-label={`${s.scenarioTitle ?? scenarioById(s.scenarioId).title} 대화 삭제`}
               >
                 <Trash2 size={16} />
                 삭제
@@ -1384,31 +1358,20 @@ export function HistoryScreen() {
             </div>
             {expanded === s.id && (() => {
               const last = s.messages.at(-1);
-              const confidences = s.messages
-                .map((message) => message.confidence)
-                .filter((value) => typeof value === "number");
-              const average = confidences.length
-                ? Math.round(confidences.reduce((sum, value) => sum + value, 0) / confidences.length)
-                : 98;
               return (
-                <section className="history-analysis" aria-label="번역과 인식 분석">
+                <section className="history-analysis" aria-label="대화 기록 자세히">
                   <div className="analysis-heading">
-                    <span><ShieldCheck size={17} /> 번역 검증 & AI 분석 로그</span>
-                    <strong>신뢰도 {average}%</strong>
-                  </div>
-                  <div className="token-row">
-                    {(last?.text ?? "대화 기록").replace(/[.,!?]/g, "").split(/\s+/).slice(0, 5).map((token, index) => (
-                      <span key={`${token}-${index}`}>[{token}]</span>
-                    ))}
+                    <span><ShieldCheck size={17} /> 마지막 문장</span>
+                    <strong>{s.messages.length}개 문장</strong>
                   </div>
                   <div className="analysis-translation">
-                    <small>KSL 문맥 번역 결과</small>
+                    <small>{last?.mode === "voice" ? "상대방의 말" : "내 말"}</small>
                     <strong>“{last?.text}”</strong>
                     {last?.english && <p lang="en">“{last.english}”</p>}
                   </div>
-                  <p>문맥 흐름과 등록 표현을 기준으로 검수했어요. 의미가 다르면 대화에서 문장을 직접 교정할 수 있습니다.</p>
+                  <p>문장을 수정하려면 대화를 다시 열어 주세요. 이 기록은 현재 브라우저에 보관됩니다.</p>
                   <div className="analysis-actions">
-                    <button onClick={() => app.openSession(s)}><Pencil size={15} /> 번역 교정</button>
+                    <button onClick={() => app.openSession(s)}><Pencil size={15} /> 대화 열기</button>
                     <button onClick={() => app.speak(last?.text ?? "")}><Volume2 size={15} /> 음성 듣기</button>
                     <button onClick={() => downloadSession(s)}><FileDown size={15} /> 텍스트 저장</button>
                     <button onClick={() => copySession(s)}><Copy size={15} /> 내용 복사</button>
@@ -1430,7 +1393,7 @@ export function HistoryScreen() {
       {deleting && (
         <Modal title="이 대화를 삭제할까요?" onClose={() => setDeleting(null)}>
           <p className="screen-note">
-            {scenarioById(deleting.scenarioId).title}의{" "}
+            {deleting.scenarioTitle ?? scenarioById(deleting.scenarioId).title}의{" "}
             {deleting.messages.length}개 메시지를 이 기기에서 삭제합니다.
           </p>
           <div className="review-actions">
@@ -1539,14 +1502,14 @@ export function SettingsScreen() {
         </div>
       </section>
       <details className="advanced-settings">
-        <summary>상세 인식 설정 <span>필요할 때만 조정해요</span></summary>
+        <summary>실험용 인식 옵션 <span>실제 인식 모델에는 아직 연결되지 않았어요</span></summary>
       <section className="settings-group ai-pipeline-settings">
         <div className="settings-title-row">
           <div>
-            <h2>수어 인식 엔진 파이프라인</h2>
-            <p>KSL 다중 모달·양방향 분석 체험 설정</p>
+            <h2>수어 인식 실험 옵션</h2>
+            <p>옵션 값만 저장되며 예시 결과에는 영향을 주지 않아요.</p>
           </div>
-          <span className="engine-status"><Activity size={14} /> 준비됨</span>
+          <span className="engine-status"><Activity size={14} /> 모델 연결 전</span>
         </div>
         {[
           ["faceTracking", ScanFace, "비수지 신호 분석", "표정·입 모양·시선 변화를 함께 표시해요."],
@@ -1578,7 +1541,7 @@ export function SettingsScreen() {
             value={app.state.prefs.confidenceThreshold}
             onChange={(event) => app.setPrefs({ confidenceThreshold: Number(event.target.value) })}
           />
-          <small>이 수치보다 낮으면 자동 전달하지 않고 확인 화면을 엽니다.</small>
+          <small>실제 모델 연결 전에는 이 값이 결과에 적용되지 않아요.</small>
         </label>
       </section>
       <section className="settings-group bridge-settings">
@@ -1679,11 +1642,11 @@ export function SettingsScreen() {
         <PermissionControl kind="audio" />
       </section>
       <details className="demo-management">
-        <summary>데모 관리 도구</summary>
-        <p>기존 표현·직원 목록 관리 화면을 열 수 있어요.</p>
+        <summary>내 표현 관리</summary>
+        <p>자주 쓰는 표현을 직접 추가하거나 수정할 수 있어요. 이전 운영 데모 기능도 이 화면에 남아 있습니다.</p>
         <button className="admin-entry" onClick={() => app.setScreen("admin")}>
           <span className="setting-icon"><Building2 size={22} /></span>
-          <span className="setting-copy"><strong>관리 화면 열기</strong><small>기존 데모 기능</small></span>
+          <span className="setting-copy"><strong>표현 관리 열기</strong><small>내가 쓰는 문장 편집</small></span>
           <ArrowRight size={19} />
         </button>
       </details>
@@ -1701,21 +1664,6 @@ export function AdminScreen() {
   const [staffRole, setStaffRole] = useState("직원");
   const entries = getPhrases(scenarioId, app.state.overrides);
   const [error, setError] = useState("");
-  const today = new Date().toDateString();
-  const todaySessions = app.state.sessions.filter(
-    (s) => new Date(s.createdAt).toDateString() === today,
-  ).length;
-  const stats = [
-    ["오늘 응대", todaySessions + "건"],
-    [
-      "검수 표현",
-      scenarios.reduce(
-        (sum, s) => sum + getPhrases(s.id, app.state.overrides).length,
-        0,
-      ) + "개",
-    ],
-    ["반복 확인 감소", "데모 지표"],
-  ];
   function save(e) {
     e.preventDefault();
     if (!edit.text.trim() || !edit.category.trim()) return;
@@ -1744,40 +1692,18 @@ export function AdminScreen() {
   return (
     <div className="screen admin-screen">
       <Header
-        title="기관 도입 관리자"
-        label={app.scenario.organization}
+        title="내 표현 관리"
+        label="설정"
         back="settings"
       />
       <p className="feature-note">
-        <ShieldCheck size={18} />이 브라우저의 프론트 체험입니다. 실제 직원 계정
-        발급·권한 인증·이용 통계 서버 저장은 수행하지 않습니다.
+        <ShieldCheck size={18} />추가한 표현과 데모 설정은 이 브라우저에만 저장됩니다.
       </p>
-      <section className="admin-summary-panel">
-        <h2>실증에서 확인할 운영 지표</h2>
-        <div>
-          <span>안내 이해도</span>
-          <span>업무 완료율</span>
-          <span>반복 확인 횟수</span>
-          <span>평균 응대 시간</span>
-        </div>
-        <p>
-          지원서의 실증 계획처럼 번역 정확도만 보지 않고 농인의 이해도와
-          직원의 응대 부담 감소를 함께 확인하는 관리자 화면입니다.
-        </p>
-      </section>
-      <section className="admin-stats">
-        {stats.map(([label, value]) => (
-          <div className="admin-stat" key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </div>
-        ))}
-      </section>
       <div className="phrase-tabs" aria-label="관리 메뉴">
         {[
-          ["phrases", "표현 세트", ClipboardList],
-          ["staff", "직원 목록", Users],
-          ["retention", "보관 정책", Database],
+          ["phrases", "내 표현", ClipboardList],
+          ["staff", "이전 운영 데모", Users],
+          ["retention", "보관 방법", Database],
         ].map(([id, label, Icon]) => (
           <button
             key={id}
@@ -1951,7 +1877,7 @@ export function AdminScreen() {
           <label className="field-label">
             보관 기간
             <select
-              aria-label="기관 기본 보관 방법"
+              aria-label="기본 보관 방법"
               value={app.state.prefs.retention}
               onChange={(e) => app.setPrefs({ retention: e.target.value })}
             >
