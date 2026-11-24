@@ -144,6 +144,7 @@ export function AppProvider({ children }) {
             {
               id: sessionId,
               scenarioId: scenario.id,
+              scenarioTitle: scenario.title,
               createdAt: now,
               updatedAt: now,
               messages,

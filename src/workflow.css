@@ -372,6 +372,20 @@ input[type="checkbox"] {
   text-align: center;
   line-height: 1.8;
 }
+.voice-screen textarea.composer-field {
+  width: 100%;
+  height: auto;
+  min-height: 96px;
+  padding: 12px 14px;
+  resize: vertical;
+  color: #30464b;
+  font: inherit;
+}
+.voice-screen .field-error {
+  color: #ad3542;
+  font-size: 13px;
+  font-weight: 700;
+}
 .chat-content {
   display: flex;
   flex-direction: column;

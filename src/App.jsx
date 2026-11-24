@@ -37,14 +37,14 @@ import {
 const screenLabels = {
   home: "홈",
   situations: "상황 선택",
-  camera: "카메라 수어 인식",
-  voice: "음성 인식",
-  result: "번역 확인",
-  chat: "양방향 실시간 대화",
+  camera: "내 수어를 글자로",
+  voice: "상대방의 말을 글자로",
+  result: "문장 확인",
+  chat: "함께 대화",
   phrases: "자주 쓰는 표현",
-  history: "통역 기록",
+  history: "대화 기록",
   settings: "내 설정",
-  admin: "기관 관리",
+  admin: "운영 데모",
   dual: "카메라와 대화",
 };
 
@@ -123,15 +123,15 @@ function HomeScreen({ onGuide }) {
     <div className="screen dashboard-screen">
       <section className="welcome-copy">
         <span className="status-chip"><Sparkles size={14} /> 서로를 잇는 대화</span>
-        <h1>전하고 싶은 말을,<br />편하게 시작해요.</h1>
-        <p>수어로 말하거나, 상대방의 말을 글자로 확인할 수 있어요.</p>
+        <h1>내 말은 전하고,<br />상대방의 말은 글자로.</h1>
+        <p>일상에서 서로 다른 방식으로도 편하게 대화해요.</p>
       </section>
 
       <section className="start-section" aria-labelledby="start-title">
         <div className="section-heading"><div><span>지금 시작하기</span><h2 id="start-title">어떤 방식이 편한가요?</h2></div></div>
         <div className="start-actions">
-          <button className="start-action sign-action" onClick={() => app.setScreen("camera")}><span className="start-icon"><Hand size={25} /></span><span><strong>수어로 말하기</strong><small>카메라와 예시 문장으로 체험해요</small></span><ArrowRight size={20} /></button>
-          <button className="start-action voice-action" onClick={() => app.setScreen("voice")}><span className="start-icon"><Mic size={25} /></span><span><strong>상대방 말 듣기</strong><small>예시 음성을 글자로 확인해요</small></span><ArrowRight size={20} /></button>
+          <button className="start-action sign-action" onClick={() => app.setScreen("camera")}><span className="start-icon"><Hand size={25} /></span><span><strong>내 수어를 글자로</strong><small>카메라와 예시 문장으로 체험해요</small></span><ArrowRight size={20} /></button>
+          <button className="start-action voice-action" onClick={() => app.setScreen("voice")}><span className="start-icon"><Mic size={25} /></span><span><strong>상대방의 말을 글자로</strong><small>마이크로 받아쓰거나 직접 입력해요</small></span><ArrowRight size={20} /></button>
         </div>
       </section>
 
@@ -148,7 +148,7 @@ function HomeScreen({ onGuide }) {
 
       <section className="scenario-card">
         <span className="scenario-icon"><ScenarioIcon size={23} /></span>
-        <div><small>상황에 맞는 표현 찾기</small><strong>{app.scenario.title}</strong><p>다른 상황도 선택할 수 있어요.</p></div>
+        <div><small>지금 필요한 표현</small><strong>{app.scenario.title}</strong><p>대화 상황을 바꿔 표현을 찾아보세요.</p></div>
         <button onClick={() => app.setScreen("situations")} aria-label="대화 상황 바꾸기"><ChevronRight size={20} /></button>
       </section>
 
@@ -173,9 +173,9 @@ function GuideDialog({ onClose }) {
         <div className="guide-heading"><span><Languages size={22} /></span><button onClick={onClose} aria-label="닫기"><X size={20} /></button></div>
         <h2 id="guide-title">대화를 시작하는 세 가지 방법</h2>
         {[
-          [Camera, "수어를 카메라로 보여주세요", "인식한 문장을 확인한 뒤 상대방에게 전달합니다."],
-          [Mic, "상대방의 음성을 들려주세요", "음성을 글자로 바꿔 농인 사용자가 읽을 수 있습니다."],
-          [MessageCircle, "대화 화면에서 번갈아 말해요", "확인한 문장과 다음 안내를 한 흐름으로 정리합니다."],
+          [Camera, "내 수어를 글자로 보여주기", "현재는 카메라 미리보기와 선택한 문장으로 흐름을 체험합니다."],
+          [Mic, "상대방의 말을 글자로 보기", "지원 브라우저에서 마이크로 받아쓴 뒤 내용을 확인합니다."],
+          [MessageCircle, "한 화면에서 함께 대화하기", "내 말과 상대방의 말을 번갈아 적고 크게 보여줄 수 있습니다."],
         ].map(([Icon, title, body], index) => <div className="guide-row" key={title}><span>{index + 1}</span><Icon size={21} /><div><strong>{title}</strong><p>{body}</p></div></div>)}
         <button className="primary-button" onClick={onClose}>시작할게요 <Check size={18} /></button>
       </section>
