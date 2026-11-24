@@ -53,6 +53,7 @@ import {
   retentionLabels,
   scenarioById,
 } from "./scenarios";
+import { voiceStyles } from "./voiceProfile.js";
 
 export const situationIcons = {
   hospital: MessageCircle,
@@ -518,7 +519,7 @@ function ReviewContent({ value, onDone, onBack }) {
           {value.mode === "sign"
             ? "수어 예시"
             : value.mode === "voice"
-              ? "음성 예시"
+              ? value.source === "microphone" ? "마이크 받아쓰기" : "예시 문장"
               : "선택한 표현"}
         </span>
         {value.confidence != null && (
@@ -569,6 +570,11 @@ function ReviewContent({ value, onDone, onBack }) {
         )}
         <Playback text={text} english={english} />
       </section>
+      {value.mode === "sign" && (
+        <button className="speech-delivery-button" type="button" onClick={() => app.speak(text)}>
+          <Volume2 size={25} /> 선택한 문장을 소리로 전하기
+        </button>
+      )}
       {low && (
         <label className="confirm-check">
           <input
@@ -752,11 +758,16 @@ export function VoiceScreen() {
           rows={3}
         />
       </label>
+      <section className="sign-output-panel" aria-label="상대방 말 수어 표시">
+        <div className="sign-output-icon"><Hand size={42} /></div>
+        <div><strong>수어로 보여주기</strong><p>받아쓴 문장에 대응하는 수어 영상은 아직 제공되지 않아요. 실제 수어 영상을 준비하기 전까지 글자를 크게 보여줍니다.</p></div>
+        {transcript.trim() && <blockquote>{transcript.trim()}</blockquote>}
+      </section>
       <div className="voice-actions">
         <button
           className="done-button"
           disabled={!transcript.trim() || listening}
-          onClick={() => app.preview({ text: transcript.trim(), english: "" }, "voice")}
+          onClick={() => app.preview({ text: transcript.trim(), english: "", source: "microphone" }, "voice")}
         >
           문장 확인 <ArrowRight size={17} />
         </button>
@@ -1449,6 +1460,74 @@ function PermissionControl({ kind }) {
   );
 }
 
+function VoiceCustomization() {
+  const app = useApp();
+  const prefs = app.state.prefs;
+  const [voices, setVoices] = useState([]);
+  useEffect(() => {
+    if (!window.speechSynthesis) return;
+    const update = () => setVoices(window.speechSynthesis.getVoices().filter((voice) =>
+      voice.lang.toLowerCase().startsWith("ko"),
+    ));
+    update();
+    window.speechSynthesis.addEventListener?.("voiceschanged", update);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", update);
+  }, []);
+  const choiceGroup = (title, options, value, key) => (
+    <div className="voice-choice-group">
+      <strong>{title}</strong>
+      <div className="voice-choice-row" role="group" aria-label={title}>
+        {options.map(([id, label]) => (
+          <button key={id} type="button" className={value === id ? "selected" : ""}
+            aria-pressed={value === id} onClick={() => app.setPrefs({ [key]: id })}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  return (
+    <section className="settings-group voice-customization">
+      <div className="settings-title-row">
+        <div><h2>나만의 번역 목소리</h2><p>원하는 느낌을 고르고 바로 들어보세요.</p></div>
+        <Volume2 size={22} aria-hidden="true" />
+      </div>
+      {choiceGroup("목소리 느낌", [["neutral", "중립"], ["feminine", "여성형"], ["masculine", "남성형"]], prefs.voiceGender, "voiceGender")}
+      {choiceGroup("연령대 느낌", [["young", "젊은"], ["adult", "성인"], ["older", "어르신"]], prefs.voiceAge, "voiceAge")}
+      <div className="voice-choice-group">
+        <strong>말투와 분위기 <small>여러 개 선택할 수 있어요</small></strong>
+        <div className="voice-choice-row voice-style-row" role="group" aria-label="말투와 분위기">
+          {voiceStyles.map(({ id, label }) => {
+            const selected = prefs.voiceStyles.includes(id);
+            return <button key={id} type="button" className={selected ? "selected" : ""}
+              aria-pressed={selected} onClick={() => app.setPrefs({
+                voiceStyles: selected ? prefs.voiceStyles.filter((item) => item !== id) : [...prefs.voiceStyles, id],
+              })}>{label}</button>;
+          })}
+        </div>
+      </div>
+      <label className="voice-device-choice">
+        <strong>기기 음성</strong>
+        <select value={prefs.voiceURI} onChange={(event) => app.setPrefs({ voiceURI: event.target.value })}>
+          <option value="">기기 기본 음성</option>
+          {voices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}</option>)}
+        </select>
+      </label>
+      <label className="voice-device-choice">
+        <strong>읽기 속도</strong>
+        <select value={prefs.speechRate} onChange={(event) => app.setPrefs({ speechRate: Number(event.target.value) })}>
+          <option value={0.7}>천천히</option><option value={0.9}>보통</option><option value={1.2}>빠르게</option>
+        </select>
+      </label>
+      <button className="voice-preview-button" type="button"
+        onClick={() => app.speak("안녕하세요. 만나서 반가워요.")}>
+        <Volume2 size={20} /> 이 목소리 들어보기
+      </button>
+      <p className="voice-honesty">성별과 연령대는 음높이와 속도로 표현하는 선호 설정입니다. 실제 목소리 종류는 기기에 설치된 한국어 음성에 따라 달라집니다.</p>
+    </section>
+  );
+}
+
 export function SettingsScreen() {
   const app = useApp();
   return (
@@ -1585,28 +1664,8 @@ export function SettingsScreen() {
           text="안녕하세요. SUIT입니다."
           english="Hello. Welcome to SUIT."
         />
-        <details className="voice-detail-settings">
-          <summary>음성 세부 설정</summary>
-          <label>
-            <span>목소리 느낌</span>
-            <select aria-label="목소리 느낌" value={app.state.prefs.voiceTone} onChange={(e) => app.setPrefs({ voiceTone: e.target.value })}>
-              <option value="clear">또렷하게</option>
-              <option value="calm">차분하게</option>
-            </select>
-          </label>
-          <label>
-            <span>읽기 속도</span>
-            <select aria-label="읽기 속도" value={app.state.prefs.speechRate} onChange={(e) => app.setPrefs({ speechRate: Number(e.target.value) })}>
-              <option value={0.7}>천천히</option>
-              <option value={0.9}>보통</option>
-              <option value={1.2}>빠르게</option>
-            </select>
-          </label>
-          <button className="voice-test-button" onClick={() => app.speak("지하철역 가는 길을 알려주시겠어요?")}>
-            <Volume2 size={16} /> 현재 설정으로 들어보기
-          </button>
-        </details>
       </section>
+      <VoiceCustomization />
       <section className="settings-group">
         <h2>대화 보관</h2>
         <label className="setting-field">
@@ -1635,8 +1694,8 @@ export function SettingsScreen() {
       <section className="settings-group">
         <h2>장치 권한 확인</h2>
         <p className="screen-note">
-          장치를 직접 확인할 때만 켭니다. 영상·음성은 저장하거나 서버로 전송하지
-          않아요.
+          장치를 직접 확인할 때만 켭니다. 카메라 영상은 저장하지 않아요.
+          마이크 받아쓰기는 브라우저의 음성 인식 서비스에서 처리할 수 있어요.
         </p>
         <PermissionControl kind="video" />
         <PermissionControl kind="audio" />
