@@ -10,6 +10,7 @@ import {
   Square,
   Send,
   Plus,
+  Play,
   X,
   Check,
   Search,
@@ -93,9 +94,9 @@ function ConversationSummary({ messages, scenario }) {
     .find((m) => m.mode === "sign" || m.mode === "text");
   const lastStaff = [...messages].reverse().find((m) => m.mode === "voice");
   return (
-    <section className="workflow-summary" aria-label="업무 응대 요약">
+    <section className="workflow-summary" aria-label="대화 요약">
       <div className="summary-head">
-        <span>직원 응대 요약</span>
+        <span>대화 요약</span>
         <strong>{scenario.title}</strong>
       </div>
       <div className="summary-grid">
@@ -105,7 +106,7 @@ function ConversationSummary({ messages, scenario }) {
         </div>
         <div>
           <small>최근 안내</small>
-          <strong>{lastStaff?.text ?? "직원 안내를 입력하면 여기에 정리됩니다."}</strong>
+          <strong>{lastStaff?.text ?? "상대방의 말을 추가하면 여기에 정리돼요."}</strong>
         </div>
       </div>
       <ol className="next-checks">
@@ -396,59 +397,32 @@ function CameraModule({ onRecognized }) {
             className={facing === "user" ? "mirrored" : ""}
           />
         )}
-        <div className="vision-hud" aria-label="수어 인식 상태">
-          <span className="hud-primary">KSL 실시간 파이프라인</span>
-          <span><Gauge size={13} /> 신뢰도 {low ? "64.0" : "92.5"}%</span>
-          <span><Sun size={13} /> 조명 양호</span>
-          <span><Ruler size={13} /> 거리 0.8m</span>
-        </div>
+        <span className="camera-mode-tag">
+          {media.stream ? "카메라 미리보기" : "예시 체험"}
+        </span>
         <div className={`scan-frame ${guideOn ? "" : "guide-off"}`}>
           <span className="corner top-left" />
           <span className="corner top-right" />
           <span className="corner bottom-left" />
           <span className="corner bottom-right" />
           {!media.stream && (
-            <div className="person-guide">
-              <span className="head-guide" />
-              <span className="body-guide" />
-              <span className="hand-guide left" />
-              <span className="hand-guide right" />
+            <div className="camera-placeholder">
+              <span><Hand size={34} /></span>
+              <strong>손으로 말할 준비가 되셨나요?</strong>
+              <small>카메라를 켜면 이곳에 미리보기가 나타나요.</small>
             </div>
           )}
-          <span className="tracking-label face">얼굴·표정 추적</span>
-          <span className="tracking-label left-hand">왼손 21 pts</span>
-          <span className="tracking-label right-hand">오른손 21 pts</span>
-          <span className="pose-line shoulder" />
-          <span className="pose-point p1" />
-          <span className="pose-point p2" />
-          <span className="pose-point p3" />
-          <span className="pose-point p4" />
         </div>
-        <span className="camera-mode-tag">
-          {media.stream ? "카메라 미리보기" : "예시 모드"}
-        </span>
         <div className="camera-status" role="status">
-          <span className="live-dot" />
           {busy
             ? "예시 결과를 준비하고 있어요"
             : automatic
               ? "3초 후 예시를 자동으로 확인해요"
-              : "얼굴과 양손, 상체가 화면에 보이도록 맞춰주세요"}
-        </div>
-        <div className="recognition-stream" aria-hidden="true">
-          <Activity size={17} />
-          <span>인식 스트림: [만나다] + [시간] + [확인]</span>
+              : media.stream
+                ? "얼굴과 두 손이 화면 안에 보이게 맞춰주세요"
+                : "표현을 고른 뒤 아래에서 예시 결과를 확인해요"}
         </div>
       </section>
-      <details className="recognition-details">
-        <summary>인식 상태 자세히</summary>
-        <div className="recognition-metrics">
-          <span><small>손동작</small><strong>{low ? "71" : "96"}%</strong></span>
-          <span><small>표정·시선</small><strong>{low ? "62" : "94"}%</strong></span>
-          <span><small>응답 시간</small><strong>{speed === 1.5 ? "21" : speed === 0.7 ? "48" : "32"}ms</strong></span>
-        </div>
-        <p><strong>감지 토큰</strong> [만나다] + [시간] + [확인]</p>
-      </details>
       <div className="inline-actions">
         <button
           disabled={media.status === "loading"}
@@ -466,22 +440,6 @@ function CameraModule({ onRecognized }) {
           {facing === "user" ? "후면으로 전환" : "전면으로 전환"}
         </button>
       </div>
-      <div className="camera-quick-tools" aria-label="카메라 보조 기능">
-        <button onClick={() => setSpeed((value) => value === 1 ? 1.5 : value === 1.5 ? 0.7 : 1)}>
-          <Gauge size={16} /> 인식 {speed.toFixed(1)}x
-        </button>
-        <button aria-pressed={guideOn} onClick={() => setGuideOn((value) => !value)}>
-          <ScanFace size={16} /> 가이드 {guideOn ? "켜짐" : "꺼짐"}
-        </button>
-        <button disabled={!candidate} onClick={() => app.speak(candidate?.text ?? "")}>
-          <Volume2 size={16} /> 문장 듣기
-        </button>
-      </div>
-      {media.error && (
-        <p className="inline-error" role="alert">
-          {media.error}
-        </p>
-      )}
       <p className="screen-note">{app.scenario.signHint}</p>
       <label className="field-label">
         체험할 수어 표현
@@ -502,9 +460,32 @@ function CameraModule({ onRecognized }) {
       </label>
       {!candidate && (
         <p className="empty-state">
-          등록된 표현이 없어요. 관리자에서 표현을 추가하거나 직접 입력해 주세요.
+          등록된 표현이 없어요. 대화 화면에서 직접 입력해 주세요.
         </p>
       )}
+      <div className="camera-actions">
+        <button
+          className="confirm-action"
+          onClick={recognize}
+          disabled={busy || !candidate}
+        >
+          {busy ? "결과 준비 중…" : "예시 결과 확인하기"}
+          <ArrowRight size={18} />
+        </button>
+      </div>
+      <details className="camera-options">
+        <summary>추가 체험 옵션</summary>
+      <div className="camera-quick-tools" aria-label="카메라 보조 기능">
+        <button onClick={() => setSpeed((value) => value === 1 ? 1.5 : value === 1.5 ? 0.7 : 1)}>
+          <Gauge size={16} /> 체험 속도 {speed.toFixed(1)}x
+        </button>
+        <button aria-pressed={guideOn} onClick={() => setGuideOn((value) => !value)}>
+          <ScanFace size={16} /> 화면 가이드 {guideOn ? "켜짐" : "꺼짐"}
+        </button>
+        <button disabled={!candidate} onClick={() => app.speak(candidate?.text ?? "")}>
+          <Volume2 size={16} /> 문장 듣기
+        </button>
+      </div>
       <div className="demo-options">
         <label>
           <input
@@ -525,16 +506,12 @@ function CameraModule({ onRecognized }) {
           확인 필요 결과 체험
         </label>
       </div>
-      <div className="camera-actions">
-        <button
-          className="confirm-action"
-          onClick={recognize}
-          disabled={busy || !candidate}
-        >
-          {busy ? "결과 준비 중…" : "예시 인식하기"}
-          <ArrowRight size={18} />
-        </button>
-      </div>
+      </details>
+      {media.error && (
+        <p className="inline-error" role="alert">
+          {media.error}
+        </p>
+      )}
     </div>
   );
 }
@@ -750,14 +727,14 @@ export function VoiceScreen() {
       </div>
       <section
         className={`voice-panel ${busy ? "is-recording" : ""}`}
-        aria-label="음성 인식 체험"
+        aria-label="음성 자막 예시 체험"
       >
         <button
           className="record-button"
           onClick={record}
-          aria-label={busy ? "체험 중지" : "음성 인식 체험 시작"}
+          aria-label={busy ? "예시 준비 중지" : "예시 자막 보기"}
         >
-          {busy ? <Square size={34} /> : <Mic size={40} />}
+          {busy ? <Square size={30} /> : <Play size={32} fill="currentColor" />}
         </button>
         <div className="wave-bars" aria-hidden="true">
           {Array.from({ length: 7 }, (_, i) => (
@@ -766,10 +743,10 @@ export function VoiceScreen() {
         </div>
         <p role="status">
           {busy
-            ? "예시 음성을 글자로 바꾸는 중…"
+            ? "예시 문장을 준비하고 있어요…"
             : ready
               ? "예시 문장을 확인해 주세요"
-              : "버튼을 눌러 음성 인식을 체험해요"}
+              : "버튼을 눌러 자막 예시를 확인해요"}
         </p>
       </section>
       <label className="field-label">
@@ -826,7 +803,6 @@ export function VoiceScreen() {
 function LivePartnerPanel() {
   const app = useApp();
   const [flipped, setFlipped] = useState(false);
-  const [listening, setListening] = useState(true);
   const latestSign = [...(app.active?.messages ?? [])]
     .reverse()
     .find((message) => message.mode === "sign" || message.mode === "text");
@@ -856,20 +832,11 @@ function LivePartnerPanel() {
         </div>
         <p>“{korean}”</p>
         {english && <small lang="en">“{english}”</small>}
-        <div className="live-audio-row">
-          <button className={listening ? "active" : ""} onClick={() => setListening((value) => !value)} aria-pressed={listening}>
-            <span className="mini-wave-bars" aria-hidden="true"><i /><i /><i /><i /></span>
-            {listening ? "실시간 음성 변환 중" : "음성 변환 일시정지"}
-          </button>
-          <span>신뢰도 98.4%</span>
-        </div>
+        <div className="partner-message-note">{app.active?.messages.length ? "최근 대화 문장" : "대화를 시작하기 전 보여주는 예시 문장"}</div>
       </div>
-      <div className="partner-camera-card">
-        <div className="partner-camera-tags">
-          <span>한국수어 실시간 감지</span>
-          <span><ScanFace size={14} /> 포즈·안면 추적</span>
-        </div>
-        <div className="partner-camera-caption"><Activity size={17} /> 인식된 제스처: [안녕하세요] + [확인]</div>
+      <div className="partner-shortcuts">
+        <button onClick={() => app.setScreen("camera")}><Hand size={18} /> 수어 예시 체험 <ArrowRight size={16} /></button>
+        <button onClick={() => app.setScreen("voice")}><Mic size={18} /> 상대방 말 예시 <ArrowRight size={16} /></button>
       </div>
     </section>
   );
@@ -1571,6 +1538,8 @@ export function SettingsScreen() {
           ><span /></button>
         </div>
       </section>
+      <details className="advanced-settings">
+        <summary>상세 인식 설정 <span>필요할 때만 조정해요</span></summary>
       <section className="settings-group ai-pipeline-settings">
         <div className="settings-title-row">
           <div>
@@ -1631,6 +1600,7 @@ export function SettingsScreen() {
           </div>
         ))}
       </section>
+      </details>
       <section className="settings-group">
         <h2>음성 출력</h2>
         <div className="setting-field">
@@ -1708,16 +1678,15 @@ export function SettingsScreen() {
         <PermissionControl kind="video" />
         <PermissionControl kind="audio" />
       </section>
-      <button className="admin-entry" onClick={() => app.setScreen("admin")}>
-        <span className="setting-icon">
-          <Building2 size={22} />
-        </span>
-        <span className="setting-copy">
-          <strong>기관 관리자 체험</strong>
-          <small>표현·직원 목록·보관 설정을 이 기기에서 관리</small>
-        </span>
-        <ArrowRight size={19} />
-      </button>
+      <details className="demo-management">
+        <summary>데모 관리 도구</summary>
+        <p>기존 표현·직원 목록 관리 화면을 열 수 있어요.</p>
+        <button className="admin-entry" onClick={() => app.setScreen("admin")}>
+          <span className="setting-icon"><Building2 size={22} /></span>
+          <span className="setting-copy"><strong>관리 화면 열기</strong><small>기존 데모 기능</small></span>
+          <ArrowRight size={19} />
+        </button>
+      </details>
     </div>
   );
 }

@@ -43,7 +43,7 @@ const screenLabels = {
   chat: "양방향 실시간 대화",
   phrases: "자주 쓰는 표현",
   history: "통역 기록",
-  settings: "접근성 및 인식 설정",
+  settings: "내 설정",
   admin: "기관 관리",
   dual: "카메라와 대화",
 };
@@ -91,7 +91,7 @@ function SuitApp() {
           <button className={screen === "chat" ? "active" : ""} onClick={() => setScreen("chat")}>대화</button>
           <button className={screen === "camera" ? "active" : ""} onClick={() => setScreen("camera")}>카메라</button>
         </div>
-        <button className="profile-button" aria-label="내 프로필">M</button>
+        <button className="profile-button" onClick={() => setScreen("settings")} aria-label="내 설정 열기"><Settings size={18} /></button>
       </header>
 
       <main className={`app-content ${fullBleed ? "full-bleed" : ""}`}>
@@ -103,7 +103,7 @@ function SuitApp() {
           ["home", "홈", Home],
           ["chat", "대화", MessageCircle],
           ["history", "기록", History],
-          ["settings", "접근성", Accessibility],
+          ["settings", "설정", Accessibility],
         ].map(([id, label, Icon]) => (
           <button key={id} className={screen === id ? "active" : ""} aria-current={screen === id ? "page" : undefined} onClick={() => setScreen(id)}>
             <Icon size={20} />
@@ -122,39 +122,40 @@ function HomeScreen({ onGuide }) {
   return (
     <div className="screen dashboard-screen">
       <section className="welcome-copy">
-        <span className="status-chip"><Sparkles size={14} /> 연결 준비 완료</span>
-        <h1>안녕하세요! 오늘은<br />어떤 대화를 도와드릴까요?</h1>
-        <p>수어·음성·문자를 한 화면에서 이어서 대화해요.</p>
+        <span className="status-chip"><Sparkles size={14} /> 서로를 잇는 대화</span>
+        <h1>전하고 싶은 말을,<br />편하게 시작해요.</h1>
+        <p>수어로 말하거나, 상대방의 말을 글자로 확인할 수 있어요.</p>
       </section>
 
-      <section className="visual-card" aria-label="SUIT 실시간 소통 소개">
-        <div className="visual-overlay">
-          <span className="floating-label sign"><Hand size={15} /> 수어를 문장으로</span>
-          <span className="floating-label voice"><Mic size={15} /> 음성을 자막으로</span>
-          <div className="visual-caption">
-            <strong>말과 손짓 사이,<br />소통은 끊기지 않도록.</strong>
-            <button onClick={onGuide}>이용 방법 <ChevronRight size={16} /></button>
-          </div>
+      <section className="start-section" aria-labelledby="start-title">
+        <div className="section-heading"><div><span>지금 시작하기</span><h2 id="start-title">어떤 방식이 편한가요?</h2></div></div>
+        <div className="start-actions">
+          <button className="start-action sign-action" onClick={() => app.setScreen("camera")}><span className="start-icon"><Hand size={25} /></span><span><strong>수어로 말하기</strong><small>카메라와 예시 문장으로 체험해요</small></span><ArrowRight size={20} /></button>
+          <button className="start-action voice-action" onClick={() => app.setScreen("voice")}><span className="start-icon"><Mic size={25} /></span><span><strong>상대방 말 듣기</strong><small>예시 음성을 글자로 확인해요</small></span><ArrowRight size={20} /></button>
         </div>
       </section>
 
-      <section className="tts-card">
-        <span className="round-icon"><Volume2 size={20} /></span>
-        <div><strong>번역 내용을 소리로 들려드려요</strong><small>필요할 때 언제든 설정에서 바꿀 수 있어요.</small></div>
-        <button className={`switch ${app.state.prefs.speech ? "on" : ""}`} aria-pressed={app.state.prefs.speech} aria-label="음성 출력" onClick={() => app.setPrefs({ speech: !app.state.prefs.speech })}><span /></button>
+      <section className="together-card">
+        <span className="together-icon"><MessageCircle size={22} /></span>
+        <div><strong>함께 대화하기</strong><small>서로 번갈아 말하고 대화를 이어가요</small></div>
+        <button onClick={() => app.setScreen("chat")} aria-label="함께 대화하기 열기"><ArrowRight size={20} /></button>
       </section>
 
-      <section className="quick-grid" aria-label="빠른 시작">
-        <button onClick={() => app.setScreen("camera")}><span><Camera size={24} /></span><strong>수어로 말하기</strong><small>카메라 인식</small></button>
-        <button onClick={() => app.setScreen("voice")}><span><Mic size={24} /></span><strong>음성으로 말하기</strong><small>실시간 자막</small></button>
-        <button onClick={() => app.setScreen("chat")}><span><MessageCircle size={24} /></span><strong>함께 대화하기</strong><small>양방향 대화</small></button>
-        <button onClick={() => app.setScreen("phrases")}><span><BookOpen size={24} /></span><strong>자주 쓰는 표현</strong><small>빠른 문장</small></button>
+      <section className="home-shortcuts" aria-label="대화 도구">
+        <button onClick={() => app.setScreen("phrases")}><BookOpen size={19} /><span>자주 쓰는 표현</span><ChevronRight size={17} /></button>
+        <button onClick={onGuide}><Sparkles size={19} /><span>이용 방법</span><ChevronRight size={17} /></button>
       </section>
 
       <section className="scenario-card">
         <span className="scenario-icon"><ScenarioIcon size={23} /></span>
-        <div><small>현재 대화 상황</small><strong>{app.scenario.title}</strong><p>{app.scenario.intro}</p></div>
+        <div><small>상황에 맞는 표현 찾기</small><strong>{app.scenario.title}</strong><p>다른 상황도 선택할 수 있어요.</p></div>
         <button onClick={() => app.setScreen("situations")} aria-label="대화 상황 바꾸기"><ChevronRight size={20} /></button>
+      </section>
+
+      <section className="tts-card">
+        <span className="round-icon"><Volume2 size={20} /></span>
+        <div><strong>번역문 소리로 듣기</strong><small>필요할 때 켜거나 끌 수 있어요.</small></div>
+        <button className={`switch ${app.state.prefs.speech ? "on" : ""}`} aria-pressed={app.state.prefs.speech} aria-label="음성 출력" onClick={() => app.setPrefs({ speech: !app.state.prefs.speech })}><span /></button>
       </section>
 
       <section className="privacy-note">
