@@ -3,7 +3,7 @@
 :root {
   font-family: "Noto Sans KR", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #30464B;
-  background: #F6EDE2;
+  background: #FFFFFF;
   --mint: #5F9C91;
   --mint-dark: #30464B;
   --blue: #668FA1;
@@ -11,13 +11,13 @@
   --muted: #66727f;
   --line: #E7E0D6;
   --surface: #ffffff;
-  --soft: #F6EDE2;
+  --soft: #FFFFFF;
   --warning: #E8B978;
 }
 
 * { box-sizing: border-box; }
-html { background: #F6EDE2; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: #F6EDE2; }
+html { background: #FFFFFF; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: #FFFFFF; }
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
@@ -30,7 +30,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   min-height: 100dvh;
   margin: 0 auto;
   position: relative;
-  background: #FBF8F3;
+  background: #FFFFFF;
   box-shadow: 0 0 60px rgba(19, 27, 46, .12);
 }
 
@@ -44,7 +44,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   align-items: center;
   gap: 10px;
   padding: max(10px, env(safe-area-inset-top)) 16px 10px;
-  background: rgba(250, 248, 255, .92);
+  background: rgba(255, 255, 255, .94);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(224, 229, 244, .75);
 }
