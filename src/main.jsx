@@ -4,6 +4,7 @@ import App from "./App.jsx";
 import "./base.css";
 import "./workflow.css";
 import "./new-ui.css";
+import "./extensions.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

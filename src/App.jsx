@@ -18,6 +18,7 @@ import {
   Sparkles,
   Volume2,
   X,
+  Grid2X2,
 } from "lucide-react";
 import { AppProvider, useApp } from "./AppState";
 import {
@@ -33,6 +34,12 @@ import {
   VoiceScreen,
   situationIcons,
 } from "./Workflow";
+import {
+  ConnectScreen,
+  EnvironmentScreen,
+  FeatureHubScreen,
+  SenseScreen,
+} from "./Extensions";
 
 const screenLabels = {
   home: "홈",
@@ -46,6 +53,10 @@ const screenLabels = {
   settings: "내 설정",
   admin: "운영 데모",
   dual: "카메라와 대화",
+  features: "생활 지원",
+  environment: "주변 정보 이해",
+  sense: "소리 시각화",
+  connect: "비대면 소통",
 };
 
 function App() {
@@ -78,6 +89,10 @@ function SuitApp() {
     settings: <SettingsScreen />,
     admin: <AdminScreen />,
     dual: <DualScreen />,
+    features: <FeatureHubScreen />,
+    environment: <EnvironmentScreen />,
+    sense: <SenseScreen />,
+    connect: <ConnectScreen />,
   }[screen];
 
   return (
@@ -142,6 +157,7 @@ function HomeScreen({ onGuide }) {
       </section>
 
       <section className="home-shortcuts" aria-label="대화 도구">
+        <button onClick={() => app.setScreen("features")}><Grid2X2 size={19} /><span>생활 지원 기능 3가지</span><ChevronRight size={17} /></button>
         <button onClick={() => app.setScreen("phrases")}><BookOpen size={19} /><span>자주 쓰는 표현</span><ChevronRight size={17} /></button>
         <button onClick={onGuide}><Hand size={22} /><span>그림으로 사용법 보기</span><ChevronRight size={17} /></button>
       </section>
