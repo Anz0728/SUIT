@@ -11,7 +11,7 @@
   --muted: #66727f;
   --line: #E7E0D6;
   --surface: #ffffff;
-  --soft: #FFFFFF;
+  --soft: #F6EDE2;
   --warning: #E8B978;
 }
 
@@ -48,7 +48,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   align-items: center;
   gap: 10px;
   padding: max(10px, env(safe-area-inset-top)) 16px 10px;
-  background: rgba(255, 255, 255, .94);
+  background: rgba(250, 248, 255, .92);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(224, 229, 244, .75);
 }
